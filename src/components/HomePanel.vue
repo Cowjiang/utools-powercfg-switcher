@@ -5,7 +5,9 @@
       <v-img height="35vh" max-height="180" src="/logo.png" />
 
       <h1 class="mt-10 text-h4 font-weight-bold">电源计划切换</h1>
-      <div class="mt-2 text-body-1 font-weight-light mb-n1">利用可用的硬件自动干衡功耗与性能</div>
+      <div class="mt-2 text-body-1 font-weight-light mb-n1">
+        {{ currentPowerPlan?.description ?? '动动手指，一键快速切换电源计划' }}
+      </div>
 
       <div class="py-8" />
 
@@ -22,7 +24,7 @@
             @click="setPowerConfigActive(plan?.guid)"
           >
             <v-icon
-              :icon="plan.icon"
+              :icon="plan?.icon ?? ''"
               size="large"
               start
             />
@@ -69,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
   import { useTheme } from 'vuetify'
 
   const theme = useTheme()
@@ -82,55 +84,12 @@
     name?: string,
     guid?: string,
     icon?: string,
-    description?:string,
+    description?: string,
     selected: boolean
   }
 
   const powerPlans = ref<PowerPlan[]>([])
-
-  const parsePlans = (stdout) => {
-    const matches = stdout.match(/GUID.*/g)
-    powerPlans.value = matches?.map(match => {
-      const name = match.match(/\((\S+)\)/)[1]
-      const powerLevel=parsePowerLevel(name)
-      return {
-        name,
-        guid: match.match(/(?<=GUID:\s*)\S+/)[0],
-        icon: iconMap[powerLevel],
-        descriptionMap:descriptionMap[powerLevel],
-        selected: match.indexOf('*') > -1
-      }
-    }) ?? []
-  }
-
-  type PowerLevel= 'high'|'balanced'|'saver'|'other'
-  const iconMap:{[key:PowerLevel]:string}={
-    'high':'mdi-speedometer',
-    'balanced':'mdi-scale-balance',
-    'saver':'mdi-leaf',
-    'other':'lightning-bolt'
-  }
-  const keywordsMap:{[key:PowerLevel]:string[]} = {
-    'high':['卓越', '高性能'],
-    'balanced':['平衡'],
-    'saver':['节能', '节电', '节约', '节']
-  }
-  const descriptionMap:{[key:PowerLevel]:string} = {
-    'high':'有利于提高性能，但会增加功耗',
-    'balanced':'利用可用的硬件自动平衡功耗与性能',
-    'saver':'尽可能降低计算机性能以节能',
-    'other':'Cowjiang说留空给他填'
-  }
-  const parsePowerLevel=(name: string):PowerLevel=>{
-    for (const key in keywordsMap) {
-      const keywords = keywordsMap[key]
-      if (keywords.find(v => name.indexOf(v) > -1)) {
-        return key as PowerLevel
-      }
-    }
-    return 'other'
-  }
-
+  const currentPowerPlan = computed(() => powerPlans.value.find(plan => plan.selected))
 
   const init = () => {
     window?.exec && window.exec('chcp 65001 & powercfg -l', (error, stdout, stderr) => {
@@ -139,10 +98,55 @@
         return
       }
       parsePlans(stdout)
-      console.log(powerPlans.value)
     })
   }
   init()
+
+  const parsePlans = (stdout) => {
+    const matches = stdout.match(/GUID.*/g)
+    powerPlans.value = matches?.map(match => {
+      const name = match.match(/\((\S+)\)/)[1]
+      const powerLevel = parsePowerLevel(name)
+      return {
+        name,
+        guid: match.match(/(?<=GUID:\s*)\S+/)[0],
+        icon: iconMap[powerLevel],
+        description: descriptionMap[powerLevel],
+        selected: match.indexOf('*') > -1
+      }
+    }) ?? []
+  }
+
+  type PowerLevel = 'high' | 'balanced' | 'saver' | 'excellent' | 'other'
+  const iconMap: { [key: PowerLevel]: string } = {
+    'high': 'mdi-speedometer',
+    'excellent': 'mdi-speedometer',
+    'balanced': 'mdi-scale-balance',
+    'saver': 'mdi-leaf',
+    'other': 'lightning-bolt'
+  }
+  const keywordsMap: { [key: PowerLevel]: string[] } = {
+    'high': ['高性能'],
+    'excellent': ['卓越'],
+    'balanced': ['平衡'],
+    'saver': ['节能', '节电', '节约', '节']
+  }
+  const descriptionMap: { [key: PowerLevel]: string } = {
+    'high': '有利于提高性能，但会增加功耗',
+    'excellent': '在较高端电脑上提供卓越性能',
+    'balanced': '利用可用的硬件自动平衡功耗与性能',
+    'saver': '尽可能降低计算机性能以节能',
+    'other': '动动手指，一键快速切换电源计划'
+  }
+  const parsePowerLevel = (name: string): PowerLevel => {
+    for (const key in keywordsMap) {
+      const keywords = keywordsMap[key]
+      if (keywords.find(v => name.indexOf(v) > -1)) {
+        return key as PowerLevel
+      }
+    }
+    return 'other'
+  }
 
   // 激活电源计划
   const setPowerConfigActive = (guid?: string) => {
