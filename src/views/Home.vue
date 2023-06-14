@@ -1,7 +1,7 @@
 <template>
-  <HelloWorld />
+  <HomePanel />
 </template>
 
 <script lang="ts" setup>
-  import HelloWorld from '@/components/HelloWorld.vue'
+  import HomePanel from '@/components/HomePanel.vue'
 </script>

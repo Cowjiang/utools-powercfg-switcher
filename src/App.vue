@@ -1,11 +1,15 @@
 <template>
   <v-app>
-    <v-main>
-      <HelloWorld />
-    </v-main>
+      <HomePanel />
   </v-app>
 </template>
 
 <script setup lang="ts">
-  import HelloWorld from '@/components/HelloWorld.vue'
+  import HomePanel from '@/components/HomePanel.vue'
 </script>
+
+<style>
+  html {
+    overflow: auto !important;
+  }
+</style>
