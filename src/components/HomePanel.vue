@@ -1,6 +1,7 @@
 <template>
   <v-container class="fill-height">
     <v-responsive class="align-center text-center fill-height">
+      <div class="py-4" />
       <v-img height="35vh" max-height="180" src="/logo.png" />
 
       <h1 class="mt-10 text-h4 font-weight-bold">电源计划切换</h1>
@@ -9,70 +10,53 @@
       <div class="py-8" />
 
       <v-row class="d-flex align-center justify-center">
-        <v-col cols="auto">
-          <v-btn icon="mdi-cog" variant="tonal" />
-        </v-col>
-
-        <v-col cols="auto">
+        <v-col
+          v-for="plan in powerPlans"
+          :key="plan.guid"
+          cols="auto"
+        >
           <v-btn
-            variant="text"
+            :color="plan.selected ? 'primary' : ''"
+            :variant="plan.selected ? 'flat' : 'text'"
             size="large"
-          >
-            <v-icon
-              icon="mdi-view-dashboard"
-              size="large"
-              start
-            />
-            平衡
-          </v-btn>
-        </v-col>
-
-        <v-col cols="auto">
-          <v-btn
-            color="primary"
-            size="large"
-            variant="flat"
+            @click="setPowerConfigActive(plan?.guid)"
           >
             <v-icon
               icon="mdi-speedometer"
               size="large"
               start
             />
-            卓越性能
+            {{ plan.name }}
           </v-btn>
         </v-col>
 
         <v-col cols="auto">
-          <v-btn
-            size="large"
-            variant="text"
-          >
-            <v-icon
-              icon="mdi-account-group"
-              size="large"
-              start
-            />
-            高性能
-          </v-btn>
-        </v-col>
+          <v-menu density="compact">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                size="large"
+                target="_blank"
+                variant="text"
+                v-bind="props"
+              >
+                <v-icon
+                  icon="mdi-dots-horizontal-circle"
+                  size="large"
+                  start
+                />
+                选项
+              </v-btn>
+            </template>
 
-        <v-col cols="auto">
-          <v-btn
-            size="large"
-            target="_blank"
-            variant="text"
-          >
-            <v-icon
-              icon="mdi-leaf"
-              size="large"
-              start
-            />
-            节电
-          </v-btn>
-        </v-col>
-
-        <v-col cols="auto">
-          <v-btn icon="mdi-theme-light-dark" variant="tonal" @click="toggleTheme" />
+            <v-list density="compact">
+              <v-list-item density="compact" @click="toggleTheme">
+                切换主题
+              </v-list-item>
+              <v-list-item density="compact" @click="openSystemPowerConfig">
+                电源计划设置
+              </v-list-item>
+            </v-list>
+          </v-menu>
         </v-col>
       </v-row>
 
@@ -82,61 +66,60 @@
 </template>
 
 <script setup lang="ts">
+  import { ref } from 'vue'
   import { useTheme } from 'vuetify'
-  import {ref} from "vue";
 
   const theme = useTheme()
-  const toggleTheme = () => theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark'
-const items=ref<Item[]>([])
-  interface Item{
-    name?:string,
-    guid?:string,
-    selected:boolean
+  const toggleTheme = () => {
+    theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark'
+    localStorage.setItem('theme', theme.global.name.value)
   }
 
-  const  parseItems=(stdout)=> {
-    const regex = /GUID.*/g
-    const matches = stdout.match(regex);
-    for (let match of matches) {
-      items.value.push({
-        name: match.match(/\((\S+)\)/)[1],
-        guid: match.match(/(?<=GUID:\s*)\S+/)[0],
-        selected: match.indexOf("*") > -1
-      })
-    }
+  interface PowerPlan {
+    name?: string,
+    guid?: string,
+    selected: boolean
+  }
+  const powerPlans = ref<PowerPlan[]>([])
+
+  const parseItems = (stdout) => {
+    const matches = stdout.match(/GUID.*/g)
+    powerPlans.value = matches?.map(match => ({
+      name: match.match(/\((\S+)\)/)[1],
+      guid: match.match(/(?<=GUID:\s*)\S+/)[0],
+      selected: match.indexOf('*') > -1
+    })) ?? []
   }
 
-  window?.exec && window.exec('chcp 65001 & powercfg -l', (error, stdout, stderr) => {
-    if (error) {
-      console.error(error);
-      return;
-    }
-    console.log(stdout);
-    parseItems(stdout);
-  });
-
-  /**
-   * 打开你的肛门
-   */
-  const openSystemPowerConfig=()=>{
-    window?.exec && window.exec('powercfg.cpl',(error,stdout,stderr)=>{
-      if(error){
-        //TODO dealWith error
+  const init = () => {
+    window?.exec && window.exec('chcp 65001 & powercfg -l', (error, stdout, stderr) => {
+      if (error) {
+        console.error(error)
+        return
       }
-      // success and stdout is empty
+      parseItems(stdout)
     })
   }
-  /**
-   * 塞进你的肛门
-   */
-  const setPowerConfigActive=(guid:string)=>{
-    window?.exec && window.exec(`powercfg -setactive ${guid}`,(error,stdout,stderr)=>{
-      if(error){
+  init()
+
+  // 激活电源计划
+  const setPowerConfigActive = (guid?: string) => {
+    if (!guid) return
+    window?.exec && window.exec(`powercfg -setactive ${guid}`, (error, stdout, stderr) => {
+      if (error) {
         //TODO dealWith error
+        return
       }
-      // success and stdout is empty
+      init()
     })
   }
 
-
+  // 打开电源计划设置
+  const openSystemPowerConfig = () => {
+    window?.exec && window.exec('powercfg.cpl', (error, stdout, stderr) => {
+      if (error) {
+        console.error(error)
+      }
+    })
+  }
 </script>
