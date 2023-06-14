@@ -1,0 +1,15 @@
+{
+    "main": "index.html",
+    "logo": "logo.png",
+    "preload": "preload.js",
+    "features": [
+        {
+            "code": "power",
+            "explain": "快速切换电源计划",
+            "cmds": [
+                "power",
+                "电源"
+            ]
+        }
+    ]
+}
