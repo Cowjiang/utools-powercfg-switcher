@@ -78,17 +78,37 @@
   interface PowerPlan {
     name?: string,
     guid?: string,
+    icon?:string,
     selected: boolean
   }
   const powerPlans = ref<PowerPlan[]>([])
 
-  const parseItems = (stdout) => {
+  const parseIcon=(name:string)=>{
+const iconMap={
+  "mdi-view-dashboard":["平衡"],
+  "mdi-speedometer":["卓越","高性能"],
+  "mdi-leaf":["节能","节电","节约","节"]
+}
+
+for(const key in iconMap){
+  const keywords = iconMap[key];
+  if (keywords.find(v => name.indexOf(v) > -1)) {
+    return key;
+  }
+}
+return "lightning-bolt"
+  }
+  const parsePlans = (stdout) => {
     const matches = stdout.match(/GUID.*/g)
-    powerPlans.value = matches?.map(match => ({
-      name: match.match(/\((\S+)\)/)[1],
-      guid: match.match(/(?<=GUID:\s*)\S+/)[0],
-      selected: match.indexOf('*') > -1
-    })) ?? []
+    powerPlans.value = matches?.map(match => {
+     const name= match.match(/\((\S+)\)/)[1]
+      return {
+        name,
+        guid: match.match(/(?<=GUID:\s*)\S+/)[0],
+icon:parseIcon(name),
+        selected: match.indexOf('*') > -1
+      }
+    }) ?? []
   }
 
   const init = () => {
@@ -97,8 +117,10 @@
         console.error(error)
         return
       }
-      parseItems(stdout)
+      parsePlans(stdout)
+      console.log(powerPlans.value)
     })
+
   }
   init()
 
