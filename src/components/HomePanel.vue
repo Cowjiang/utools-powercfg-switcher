@@ -22,7 +22,7 @@
             @click="setPowerConfigActive(plan?.guid)"
           >
             <v-icon
-              icon="mdi-speedometer"
+              :icon="plan.icon"
               size="large"
               start
             />
@@ -49,6 +49,9 @@
             </template>
 
             <v-list density="compact">
+              <v-list-item density="compact" @click="init">
+                刷新
+              </v-list-item>
               <v-list-item density="compact" @click="toggleTheme">
                 切换主题
               </v-list-item>
@@ -78,37 +81,37 @@
   interface PowerPlan {
     name?: string,
     guid?: string,
-    icon?:string,
+    icon: string,
     selected: boolean
   }
+
   const powerPlans = ref<PowerPlan[]>([])
-
-  const parseIcon=(name:string)=>{
-const iconMap={
-  "mdi-view-dashboard":["平衡"],
-  "mdi-speedometer":["卓越","高性能"],
-  "mdi-leaf":["节能","节电","节约","节"]
-}
-
-for(const key in iconMap){
-  const keywords = iconMap[key];
-  if (keywords.find(v => name.indexOf(v) > -1)) {
-    return key;
-  }
-}
-return "lightning-bolt"
-  }
   const parsePlans = (stdout) => {
     const matches = stdout.match(/GUID.*/g)
     powerPlans.value = matches?.map(match => {
-     const name= match.match(/\((\S+)\)/)[1]
+      const name = match.match(/\((\S+)\)/)[1]
       return {
         name,
         guid: match.match(/(?<=GUID:\s*)\S+/)[0],
-icon:parseIcon(name),
+        icon: parseIcon(name),
         selected: match.indexOf('*') > -1
       }
     }) ?? []
+  }
+
+  const iconMap = {
+    'mdi-scale-balance': ['平衡'],
+    'mdi-speedometer': ['卓越', '高性能'],
+    'mdi-leaf': ['节能', '节电', '节约', '节']
+  }
+  const parseIcon = (name: string) => {
+    for (const key in iconMap) {
+      const keywords = iconMap[key]
+      if (keywords.find(v => name.indexOf(v) > -1)) {
+        return key
+      }
+    }
+    return 'lightning-bolt'
   }
 
   const init = () => {
@@ -118,9 +121,7 @@ icon:parseIcon(name),
         return
       }
       parsePlans(stdout)
-      console.log(powerPlans.value)
     })
-
   }
   init()
 
