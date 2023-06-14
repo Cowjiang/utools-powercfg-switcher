@@ -83,9 +83,28 @@
 
 <script setup lang="ts">
   import { useTheme } from 'vuetify'
+  import {ref} from "vue";
 
   const theme = useTheme()
   const toggleTheme = () => theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark'
+const items=ref<Item[]>([])
+  interface Item{
+    name?:string,
+    guid?:string,
+    selected:boolean
+  }
+
+  const  parseItems=(stdout)=> {
+    const regex = /GUID.*/g
+    const matches = stdout.match(regex);
+    for (let match of matches) {
+      items.value.push({
+        name: match.match(/\((\S+)\)/)[1],
+        guid: match.match(/(?<=GUID:\s*)\S+/)[0],
+        selected: match.indexOf("*") > -1
+      })
+    }
+  }
 
   window?.exec && window.exec('chcp 65001 & powercfg -l', (error, stdout, stderr) => {
     if (error) {
@@ -93,5 +112,31 @@
       return;
     }
     console.log(stdout);
+    parseItems(stdout);
   });
+
+  /**
+   * 打开你的肛门
+   */
+  const openSystemPowerConfig=()=>{
+    window?.exec && window.exec('powercfg.cpl',(error,stdout,stderr)=>{
+      if(error){
+        //TODO dealWith error
+      }
+      // success and stdout is empty
+    })
+  }
+  /**
+   * 塞进你的肛门
+   */
+  const setPowerConfigActive=(guid:string)=>{
+    window?.exec && window.exec(`powercfg -setactive ${guid}`,(error,stdout,stderr)=>{
+      if(error){
+        //TODO dealWith error
+      }
+      // success and stdout is empty
+    })
+  }
+
+
 </script>
