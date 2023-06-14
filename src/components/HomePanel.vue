@@ -81,38 +81,56 @@
   interface PowerPlan {
     name?: string,
     guid?: string,
-    icon: string,
+    icon?: string,
+    description?:string,
     selected: boolean
   }
 
   const powerPlans = ref<PowerPlan[]>([])
+
   const parsePlans = (stdout) => {
     const matches = stdout.match(/GUID.*/g)
     powerPlans.value = matches?.map(match => {
       const name = match.match(/\((\S+)\)/)[1]
+      const powerLevel=parsePowerLevel(name)
       return {
         name,
         guid: match.match(/(?<=GUID:\s*)\S+/)[0],
-        icon: parseIcon(name),
+        icon: iconMap[powerLevel],
+        descriptionMap:descriptionMap[powerLevel],
         selected: match.indexOf('*') > -1
       }
     }) ?? []
   }
 
-  const iconMap = {
-    'mdi-scale-balance': ['平衡'],
-    'mdi-speedometer': ['卓越', '高性能'],
-    'mdi-leaf': ['节能', '节电', '节约', '节']
+  type PowerLevel= 'high'|'balanced'|'saver'|'other'
+  const iconMap:{[key:PowerLevel]:string}={
+    'high':'mdi-speedometer',
+    'balanced':'mdi-scale-balance',
+    'saver':'mdi-leaf',
+    'other':'lightning-bolt'
   }
-  const parseIcon = (name: string) => {
-    for (const key in iconMap) {
-      const keywords = iconMap[key]
+  const keywordsMap:{[key:PowerLevel]:string[]} = {
+    'high':['卓越', '高性能'],
+    'balanced':['平衡'],
+    'saver':['节能', '节电', '节约', '节']
+  }
+  const descriptionMap:{[key:PowerLevel]:string} = {
+    'high':'有利于提高性能，但会增加功耗',
+    'balanced':'利用可用的硬件自动平衡功耗与性能',
+    'saver':'尽可能降低计算机性能以节能',
+    'other':'Cowjiang说留空给他填'
+  }
+  const parsePowerLevel=(name: string):PowerLevel=>{
+    for (const key in keywordsMap) {
+      const keywords = keywordsMap[key]
       if (keywords.find(v => name.indexOf(v) > -1)) {
-        return key
+        return key as PowerLevel
       }
     }
-    return 'lightning-bolt'
+    return 'other'
   }
+
 
   const init = () => {
     window?.exec && window.exec('chcp 65001 & powercfg -l', (error, stdout, stderr) => {
@@ -121,6 +139,7 @@
         return
       }
       parsePlans(stdout)
+      console.log(powerPlans.value)
     })
   }
   init()
