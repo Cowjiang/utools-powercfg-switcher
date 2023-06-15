@@ -110,43 +110,61 @@
       return {
         name,
         guid: match.match(/(?<=GUID:\s*)\S+/)[0],
-        icon: iconMap[powerLevel],
-        description: descriptionMap[powerLevel],
+        icon: powerLevel.icon,
+        description: powerLevel.description,
         selected: match.indexOf('*') > -1
       }
     }) ?? []
   }
 
-  type PowerLevel = 'high' | 'balanced' | 'saver' | 'excellent' | 'other'
-  const iconMap: { [key: PowerLevel]: string } = {
-    'high': 'mdi-speedometer',
-    'excellent': 'mdi-speedometer',
-    'balanced': 'mdi-scale-balance',
-    'saver': 'mdi-leaf',
-    'other': 'lightning-bolt'
+  interface PowerLevel{
+    name:string,
+    icon:string,
+    description:string,
+    keywords:string[]
   }
-  const keywordsMap: { [key: PowerLevel]: string[] } = {
-    'high': ['高性能'],
-    'excellent': ['卓越'],
-    'balanced': ['平衡'],
-    'saver': ['节能', '节电', '节约', '节']
+  const powerLevelConfig:PowerLevel[]=[
+    {
+      name:'high',
+      icon:'mdi-speedometer',
+      description:'有利于提高性能，但会增加功耗',
+      keywords:['高性能']
+    },
+    {
+      name:'excellent',
+      icon:'mdi-speedometer',
+      description:'在较高端电脑上提供卓越性能',
+      keywords:['卓越']
+    },
+    {
+      name:'balanced',
+      icon:'mdi-scale-balance',
+      description:'利用可用的硬件自动平衡功耗与性能',
+      keywords:['平衡']
+    },
+    {
+      name:'saver',
+      icon:'mdi-leaf',
+      description:'尽可能降低计算机性能以节能',
+      keywords:['节能', '节电', '节约', '节']
+    }
+  ]
+  const unknownPowerLevel:PowerLevel= {
+    name:'other',
+    icon:'lightning-bolt',
+    description:'动动手指，一键快速切换电源计划',
+    keywords:[]
   }
-  const descriptionMap: { [key: PowerLevel]: string } = {
-    'high': '有利于提高性能，但会增加功耗',
-    'excellent': '在较高端电脑上提供卓越性能',
-    'balanced': '利用可用的硬件自动平衡功耗与性能',
-    'saver': '尽可能降低计算机性能以节能',
-    'other': '动动手指，一键快速切换电源计划'
-  }
+
   const parsePowerLevel = (name: string): PowerLevel => {
-    for (const key in keywordsMap) {
-      const keywords = keywordsMap[key]
-      if (keywords.find(v => name.indexOf(v) > -1)) {
-        return key as PowerLevel
+    for (const powerLevel of powerLevelConfig) {
+      if (powerLevel.keywords.find(v => name.indexOf(v) > -1)) {
+        return powerLevel
       }
     }
-    return 'other'
+    return unknownPowerLevel
   }
+
 
   // 激活电源计划
   const setPowerConfigActive = (guid?: string) => {
