@@ -6,7 +6,7 @@
 
       <h1 class="mt-10 text-h4 font-weight-bold">电源计划切换</h1>
       <div class="mt-2 text-body-1 font-weight-light mb-n1">
-        {{ currentPowerPlan?.description ?? '动动手指，一键快速切换电源计划' }}
+        {{ currentPowerPlan?.description ?? unknownPowerLevel.description }}
       </div>
 
       <div class="py-8" />
@@ -21,7 +21,7 @@
             :color="plan.selected ? 'primary' : ''"
             :variant="plan.selected ? 'flat' : 'text'"
             size="large"
-            @click="setPowerConfigActive(plan?.guid)"
+            @click="setPowerConfigActive(plan)"
           >
             <v-icon
               :icon="plan?.icon ?? ''"
@@ -81,10 +81,10 @@
   }
 
   interface PowerPlan {
-    name?: string,
-    guid?: string,
-    icon?: string,
-    description?: string,
+    name?: string
+    guid?: string
+    icon?: string
+    description?: string
     selected: boolean
   }
 
@@ -117,43 +117,44 @@
     }) ?? []
   }
 
-  interface PowerLevel{
-    name:string,
-    icon:string,
-    description:string,
-    keywords:string[]
+  interface PowerLevel {
+    name: string
+    icon: string
+    description: string
+    keywords: string[]
   }
-  const powerLevelConfig:PowerLevel[]=[
+
+  const powerLevelConfig: PowerLevel[] = [
     {
-      name:'high',
-      icon:'mdi-speedometer',
-      description:'有利于提高性能，但会增加功耗',
-      keywords:['高性能']
+      name: 'high',
+      icon: 'mdi-speedometer',
+      description: '有利于提高性能，但会增加功耗',
+      keywords: ['高性能']
     },
     {
-      name:'excellent',
-      icon:'mdi-speedometer',
-      description:'在较高端电脑上提供卓越性能',
-      keywords:['卓越']
+      name: 'excellent',
+      icon: 'mdi-speedometer',
+      description: '在较高端电脑上提供卓越性能',
+      keywords: ['卓越']
     },
     {
-      name:'balanced',
-      icon:'mdi-scale-balance',
-      description:'利用可用的硬件自动平衡功耗与性能',
-      keywords:['平衡']
+      name: 'balanced',
+      icon: 'mdi-scale-balance',
+      description: '利用可用的硬件自动平衡功耗与性能',
+      keywords: ['平衡']
     },
     {
-      name:'saver',
-      icon:'mdi-leaf',
-      description:'尽可能降低计算机性能以节能',
-      keywords:['节能', '节电', '节约', '节']
+      name: 'saver',
+      icon: 'mdi-leaf',
+      description: '尽可能降低计算机性能以节能',
+      keywords: ['节能', '节电', '节约', '节']
     }
   ]
-  const unknownPowerLevel:PowerLevel= {
-    name:'other',
-    icon:'lightning-bolt',
-    description:'动动手指，一键快速切换电源计划',
-    keywords:[]
+  const unknownPowerLevel: PowerLevel = {
+    name: 'other',
+    icon: 'lightning-bolt',
+    description: '动动手指，一键快速切换电源计划',
+    keywords: []
   }
 
   const parsePowerLevel = (name: string): PowerLevel => {
@@ -165,25 +166,27 @@
     return unknownPowerLevel
   }
 
-
   // 激活电源计划
-  const setPowerConfigActive = (guid?: string) => {
-    if (!guid) return
-    window?.exec && window.exec(`powercfg -setactive ${guid}`, (error, stdout, stderr) => {
+  const setPowerConfigActive = (powerPlan?: PowerPlan) => {
+    if (!powerPlan?.guid) return
+    window?.exec && window.exec(`powercfg -setactive ${powerPlan.guid}`, (error, stdout, stderr) => {
       if (error) {
-        //TODO dealWith error
+        console.error(error)
+        window?.utools && window.utools.showNotification('切换失败')
         return
       }
+      window?.utools && window.utools.showNotification(`电源计划已切换至 ⌈${powerPlan.name}⌋`)
       init()
     })
   }
 
   // 打开电源计划设置
   const openSystemPowerConfig = () => {
-    window?.exec && window.exec('powercfg.cpl', (error, stdout, stderr) => {
-      if (error) {
-        console.error(error)
-      }
-    })
+    window?.utools && window.utools.shellOpenPath('powercfg.cpl')
+    // window?.exec && window.exec('powercfg.cpl', (error, stdout, stderr) => {
+    //   if (error) {
+    //     console.error(error)
+    //   }
+    // })
   }
 </script>
