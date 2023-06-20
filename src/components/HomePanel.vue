@@ -105,7 +105,7 @@
   const parsePlans = (stdout) => {
     const matches = stdout.match(/GUID.*/g)
     powerPlans.value = matches?.map(match => {
-      const name = match.match(/\((\S+)\)/)[1]
+      const name = match.match(/\((.*)\)/)[1]
       const powerLevel = parsePowerLevel(name)
       return {
         name,
